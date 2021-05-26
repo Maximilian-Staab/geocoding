@@ -25,30 +25,31 @@
 //!geocoding = { version = "*", default-features = false, features = ["rustls-tls"] }
 //!```
 
-static UA_STRING: &str = "Rust-Geocoding";
+use std::num::ParseIntError;
 
 use chrono;
 pub use geo_types::{Coordinate, Point};
 use num_traits::Float;
 use reqwest::blocking::Client;
-use reqwest::header::ToStrError;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
-use serde::de::DeserializeOwned;
+use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
-use std::num::ParseIntError;
+use serde::de::DeserializeOwned;
 use thiserror::Error;
+
+pub use crate::geoadmin::GeoAdmin;
+pub use crate::opencage::Opencage;
+use crate::openstreetmap::AddressDetails;
+pub use crate::openstreetmap::Openstreetmap;
+
+static UA_STRING: &str = "Rust-Geocoding";
 
 // The OpenCage geocoding provider
 pub mod opencage;
-pub use crate::opencage::Opencage;
-
 // The OpenStreetMap Nominatim geocoding provider
 pub mod openstreetmap;
-pub use crate::openstreetmap::Openstreetmap;
-
 // The GeoAdmin geocoding provider
 pub mod geoadmin;
-pub use crate::geoadmin::GeoAdmin;
 
 /// Errors that can occur during geocoding operations
 #[derive(Error, Debug)]
@@ -84,8 +85,8 @@ pub enum GeocodingError {
 /// );
 /// ```
 pub trait Reverse<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     // NOTE TO IMPLEMENTERS: Point coordinates are lon, lat (x, y)
     // You may have to provide these coordinates in reverse order,
@@ -112,8 +113,8 @@ where
 /// );
 /// ```
 pub trait Forward<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     // NOTE TO IMPLEMENTERS: while returned provider point data may not be in
     // lon, lat (x, y) order, Geocoding requires this order in its output Point
@@ -127,23 +128,23 @@ where
 /// - `maximum` refers to the **top-right** or **north-east** corner of the bounding box.
 #[derive(Copy, Clone, Debug)]
 pub struct InputBounds<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     pub minimum_lonlat: Point<T>,
     pub maximum_lonlat: Point<T>,
 }
 
 impl<T> InputBounds<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     /// Create a new `InputBounds` struct by passing 2 `Point`s defining:
     /// - minimum (bottom-left) longitude and latitude coordinates
     /// - maximum (top-right) longitude and latitude coordinates
     pub fn new<U>(minimum_lonlat: U, maximum_lonlat: U) -> InputBounds<T>
-    where
-        U: Into<Point<T>>,
+        where
+            U: Into<Point<T>>,
     {
         InputBounds {
             minimum_lonlat: minimum_lonlat.into(),
@@ -154,8 +155,8 @@ where
 
 /// Convert borrowed input bounds into the correct String representation
 impl<T> From<InputBounds<T>> for String
-where
-    T: Float,
+    where
+        T: Float,
 {
     fn from(ip: InputBounds<T>) -> String {
         // Return in lon, lat order
