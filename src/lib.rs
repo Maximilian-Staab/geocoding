@@ -107,10 +107,10 @@ pub trait Reverse<T>
 ///
 /// let p = Point::new(2.12870, 41.40139);
 /// let oc = Openstreetmap::new();
-/// let res = oc.detailed_reverse(&p).unwrap();
+/// let res = oc.detailed_reverse(&p).unwrap().unwrap();
 /// assert_eq!(
 ///     res,
-///     Some(AddressDetails {
+///     AddressDetails {
 ///         house_number: Some("68".to_string()),
 ///         road: Some("Carrer de Calatrava".to_string()),
 ///         neighbourhood: Some("les Tres Torres".to_string()),
@@ -119,13 +119,13 @@ pub trait Reverse<T>
 ///         city: Some("Barcelona".to_string()),
 ///         municipality: Some("Barcelonès".to_string()),
 ///         county: Some("Barcelona".to_string()),
-///         state: Some("Katalonien".to_string()),
+///         state: Some("Catalunya".to_string()),
 ///         postcode: Some("08017".to_string()),
-///         country: Some("Spanien".to_string()),
+///         country: Some("España".to_string()),
 ///         country_code: Some("es".to_string()),
 ///         continent: None,
 ///         public_building: None,
-///         suburb: None})
+///         suburb: None}
 /// );
 /// ```
 pub trait DetailedReverse<T>
