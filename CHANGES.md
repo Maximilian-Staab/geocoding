@@ -5,6 +5,10 @@
 - Switch GeoAdmin API to WGS84
   - <https://github.com/georust/geocoding/pull/43>
 
+## 0.3.2
+
+- Add function to reverse search and receive detailed information
+
 ## 0.3.1
 
 - Allow usage of `rustls-tls` feature
