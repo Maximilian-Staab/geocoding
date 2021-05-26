@@ -16,14 +16,15 @@
 //! let res = osm.forward(&address);
 //! assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
 //! ```
-use crate::{GeocodingError, DetailedReverse};
-use crate::InputBounds;
-use crate::Point;
-use crate::UA_STRING;
+use num_traits::Float;
+
+use crate::{DetailedReverse, GeocodingError};
 use crate::{Client, HeaderMap, HeaderValue, USER_AGENT};
 use crate::{Deserialize, Serialize};
 use crate::{Forward, Reverse};
-use num_traits::Float;
+use crate::InputBounds;
+use crate::Point;
+use crate::UA_STRING;
 
 /// An instance of the Openstreetmap geocoding service
 pub struct Openstreetmap {
@@ -33,8 +34,8 @@ pub struct Openstreetmap {
 
 /// An instance of a parameter builder for Openstreetmap geocoding
 pub struct OpenstreetmapParams<'a, T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     query: &'a str,
     addressdetails: bool,
@@ -42,8 +43,8 @@ where
 }
 
 impl<'a, T> OpenstreetmapParams<'a, T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     /// Create a new OpenStreetMap parameter builder
     /// # Example:
@@ -143,9 +144,9 @@ impl Openstreetmap {
         &self,
         params: &OpenstreetmapParams<T>,
     ) -> Result<OpenstreetmapResponse<T>, GeocodingError>
-    where
-        T: Float,
-        for<'de> T: Deserialize<'de>,
+        where
+            T: Float,
+            for<'de> T: Deserialize<'de>,
     {
         let format = String::from("geojson");
         let addressdetails = String::from(if params.addressdetails { "1" } else { "0" });
@@ -173,7 +174,11 @@ impl Openstreetmap {
         Ok(res)
     }
 
-    fn simple_reverse<T>(&self, point: &Point<T>) -> Result<OpenstreetmapResult<T>, GeocodingError>{
+    fn simple_reverse<T>(&self, point: &Point<T>) -> Result<Option<OpenstreetmapResult<T>>, GeocodingError>
+        where
+            T: Float,
+            for<'de> T: Deserialize<'de>,
+    {
         let resp = self
             .client
             .get(&format!("{}reverse", self.endpoint))
@@ -186,7 +191,7 @@ impl Openstreetmap {
             .error_for_status()?;
         let res: OpenstreetmapResponse<T> = resp.json()?;
 
-        Ok(res.features.into_iter().next()?)
+        Ok(res.features.into_iter().next())
     }
 }
 
@@ -197,9 +202,9 @@ impl Default for Openstreetmap {
 }
 
 impl<T> Forward<T> for Openstreetmap
-where
-    T: Float,
-    for<'de> T: Deserialize<'de>,
+    where
+        T: Float,
+        for<'de> T: Deserialize<'de>,
 {
     /// A forward-geocoding lookup of an address. Please see [the documentation](https://nominatim.org/release-docs/develop/api/Search/) for details.
     ///
@@ -221,28 +226,34 @@ where
 }
 
 impl<T> Reverse<T> for Openstreetmap
-where
-    T: Float,
-    for<'de> T: Deserialize<'de>,
+    where
+        T: Float,
+        for<'de> T: Deserialize<'de>,
 {
     /// A reverse lookup of a point. More detail on the format of the
     /// returned `String` can be found [here](https://nominatim.org/release-docs/develop/api/Reverse/)
     ///
     /// This method passes the `format` parameter to the API.
     fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
-        let address = self.simple_reverse(point)?;
-        Ok(Some(address.properties.display_name.to_string()))
+        if let Some(t) = self.simple_reverse(point)? {
+            Ok(Some(t.properties.display_name.to_string()))
+        } else {
+            Ok(None)
+        }
     }
 }
 
 impl<T> DetailedReverse<T> for Openstreetmap
-where
-    T: Float,
-    for<'de> T: Deserialize<'de>,
+    where
+        T: Float,
+        for<'de> T: Deserialize<'de>,
 {
     fn detailed_reverse(&self, point: &Point<T>) -> Result<Option<AddressDetails>, GeocodingError> {
-        let address = self.simple_reverse(point)?;
-        Ok(Some(address.properties.address?))
+        if let Some(address) = self.simple_reverse(point)? {
+            Ok(address.properties.address)
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -298,8 +309,8 @@ where
 ///```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenstreetmapResponse<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     pub r#type: String,
     pub licence: String,
@@ -309,8 +320,8 @@ where
 /// A geocoding result
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenstreetmapResult<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     pub r#type: String,
     pub properties: ResultProperties,
@@ -333,7 +344,7 @@ pub struct ResultProperties {
 }
 
 /// Address details in the result object
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct AddressDetails {
     pub city: Option<String>,
     pub city_district: Option<String>,
@@ -355,8 +366,8 @@ pub struct AddressDetails {
 /// A geocoding result geometry
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResultGeometry<T>
-where
-    T: Float,
+    where
+        T: Float,
 {
     pub r#type: String,
     pub coordinates: (T, T),
