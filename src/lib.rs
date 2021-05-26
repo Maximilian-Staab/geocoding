@@ -94,6 +94,51 @@ pub trait Reverse<T>
     fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError>;
 }
 
+/// Reverse-geocode a coordinate.
+///
+/// This trait represents the most simple and minimal implementation
+/// available from a given geocoding provider: some address formatted as Option<String>.
+///
+/// Examples
+///
+/// ```
+/// use geocoding::{Point, DetailedReverse, Openstreetmap};
+/// use geocoding::openstreetmap::AddressDetails;
+///
+/// let p = Point::new(2.12870, 41.40139);
+/// let oc = Openstreetmap::new();
+/// let res = oc.detailed_reverse(&p).unwrap();
+/// assert_eq!(
+///     res,
+///     Some(AddressDetails {
+///         house_number: Some("68".to_string()),
+///         road: Some("Carrer de Calatrava".to_string()),
+///         neighbourhood: Some("les Tres Torres".to_string()),
+///         city_district: Some("Sarrià - Sant Gervasi".to_string()),
+///         construction: None,
+///         city: Some("Barcelona".to_string()),
+///         municipality: Some("Barcelonès".to_string()),
+///         county: Some("Barcelona".to_string()),
+///         state: Some("Katalonien".to_string()),
+///         postcode: Some("08017".to_string()),
+///         country: Some("Spanien".to_string()),
+///         country_code: Some("es".to_string()),
+///         continent: None,
+///         public_building: None,
+///         suburb: None})
+/// );
+/// ```
+pub trait DetailedReverse<T>
+    where
+        T: Float,
+{
+    // NOTE TO IMPLEMENTERS: Point coordinates are lon, lat (x, y)
+    // You may have to provide these coordinates in reverse order,
+    // depending on the provider's requirements (sNoneee e.g. OpenCage).
+    // Only openstreetmap supports detailed Address information.
+    fn detailed_reverse(&self, point: &Point<T>) -> Result<Option<AddressDetails>, GeocodingError>;
+}
+
 /// Forward-geocode a coordinate.
 ///
 /// This trait represents the most simple and minimal implementation available

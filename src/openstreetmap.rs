@@ -16,7 +16,7 @@
 //! let res = osm.forward(&address);
 //! assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
 //! ```
-use crate::GeocodingError;
+use crate::{GeocodingError, DetailedReverse};
 use crate::InputBounds;
 use crate::Point;
 use crate::UA_STRING;
@@ -172,6 +172,22 @@ impl Openstreetmap {
         let res: OpenstreetmapResponse<T> = resp.json()?;
         Ok(res)
     }
+
+    fn simple_reverse<T>(&self, point: &Point<T>) -> Result<OpenstreetmapResult<T>, GeocodingError>{
+        let resp = self
+            .client
+            .get(&format!("{}reverse", self.endpoint))
+            .query(&[
+                (&"lon", &point.x().to_f64().unwrap().to_string()),
+                (&"lat", &point.y().to_f64().unwrap().to_string()),
+                (&"format", &String::from("geojson")),
+            ])
+            .send()?
+            .error_for_status()?;
+        let res: OpenstreetmapResponse<T> = resp.json()?;
+
+        Ok(res.features.into_iter().next()?)
+    }
 }
 
 impl Default for Openstreetmap {
@@ -214,19 +230,19 @@ where
     ///
     /// This method passes the `format` parameter to the API.
     fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
-        let resp = self
-            .client
-            .get(&format!("{}reverse", self.endpoint))
-            .query(&[
-                (&"lon", &point.x().to_f64().unwrap().to_string()),
-                (&"lat", &point.y().to_f64().unwrap().to_string()),
-                (&"format", &String::from("geojson")),
-            ])
-            .send()?
-            .error_for_status()?;
-        let res: OpenstreetmapResponse<T> = resp.json()?;
-        let address = &res.features[0];
+        let address = self.simple_reverse(point)?;
         Ok(Some(address.properties.display_name.to_string()))
+    }
+}
+
+impl<T> DetailedReverse<T> for Openstreetmap
+where
+    T: Float,
+    for<'de> T: Deserialize<'de>,
+{
+    fn detailed_reverse(&self, point: &Point<T>) -> Result<Option<AddressDetails>, GeocodingError> {
+        let address = self.simple_reverse(point)?;
+        Ok(Some(address.properties.address?))
     }
 }
 
@@ -332,6 +348,8 @@ pub struct AddressDetails {
     pub state: Option<String>,
     pub suburb: Option<String>,
     pub road: Option<String>,
+    pub county: Option<String>,
+    pub municipality: Option<String>,
 }
 
 /// A geocoding result geometry
